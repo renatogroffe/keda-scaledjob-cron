@@ -1,0 +1,35 @@
+# Documentação oficial: https://keda.sh/docs/2.20/concepts/scaling-jobs/
+apiVersion: keda.sh/v1alpha1
+kind: ScaledJob
+metadata:
+  name: testes-scaledjob
+spec:
+  jobTargetRef:
+    parallelism: 1                    # Quantos pods rodam em paralelo por Job
+    completions: 1                    # Quantos pods precisam terminar com sucesso
+    activeDeadlineSeconds: 600        # Tempo limite do Job
+    backoffLimit: 4                   # Tentativas em caso de falha
+    template:
+      spec:
+        containers:
+          - name: processador-tarefa
+            image: renatogroffe/dotnet11-job-httprequest:1
+            env:
+              - name: EndpointRequest
+                value: "https://groffeapicontagem.redfield-34a01ef2.eastus.azurecontainerapps.io/contador"
+              - name: WaitingTimeBeforeRequestInSeconds
+                value: "5"
+              - name: WaitingTimeAfterRequestInSeconds
+                value: "25"
+        restartPolicy: Never
+  pollingInterval: 10             # Opcional. Padrão: 30 segundos
+  maxReplicaCount: 15             # Opcional. Padrão: 100
+  successfulJobsHistoryLimit: 10  # Opcional. Padrão: 100. Quantos Jobs concluídos devem ser mantidos.
+  failedJobsHistoryLimit: 5       # Opcional. Padrão: 100. Quantos Jobs com falha devem ser mantidos.
+  triggers:
+    - type: cron
+      metadata:
+        timezone: America/Sao_Paulo  # Fuso horário de referência
+        start: 57 21 * * *           # Dispara todos os dias às...
+        end: 03 22 * * *             # Janela ativa até...
+        desiredReplicas: "5"         # Quantos Jobs criar durante essa janela
